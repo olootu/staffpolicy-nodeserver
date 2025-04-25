@@ -5,6 +5,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 // require('dotenv').config(); // for using .env file
 const bcrypt = require('bcryptjs');
+const port = process.env.PORT || 8080;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'my-app-secret-key';
 const app = express();
@@ -200,6 +201,6 @@ app.get('/get-read-documents', (req, res) => {
 
   
 
-app.listen(8080, () => {
+app.listen(port, () => {
     console.log('server listening on port 8080')
 })
