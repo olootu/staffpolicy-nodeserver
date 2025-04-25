@@ -202,5 +202,5 @@ app.get('/get-read-documents', (req, res) => {
   
 
 app.listen(port, () => {
-    console.log('server listening on port 8080')
+    console.log(`server listening on port ${port}`)
 })
