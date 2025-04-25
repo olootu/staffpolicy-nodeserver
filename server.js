@@ -114,7 +114,7 @@ app.post('/add_user', async (req, res) => {
         db.query(sql, values, (err, result) => {
             if (err) {
                 console.error("DB error:", err);
-                return res.status(500).json({ message: "Something unexpected occurred", error: err });
+                return res.status(500).json({ message: `Something unexpected occurred, ${err}`, error: err });
             }
 
             return res.status(200).json({ success: "User added successfully" });
@@ -131,7 +131,7 @@ app.get('/users', (req, res) => {
     db.query(sql, (err, result) => {
         if (err) {
             console.error("DB error:", err);
-            return res.status(500).json({ message: "Something unexpected occurred", error: err });
+            return res.status(500).json({ message: `Something unexpected occurred, ${err}`, error: err });
         }
 
         console.log('result:', result);
@@ -151,7 +151,7 @@ app.post('/login', (req, res) => {
     db.query(sql, [logUsername], async (err, results) => {
         if (err) {
             console.error("DB error:", err);
-            return res.status(500).json({ message: "Server error" });
+            return res.status(500).json({ message: `Server error, ${err}` });
         }
 
         if (results.length === 0) {
@@ -192,7 +192,7 @@ app.get('/proxy-pdf', async (req, res) => {
         res.send(buffer);
     } catch (err) {
         console.error('PDF fetch error:', err);
-        res.status(500).json({ error: 'Failed to fetch PDF' });
+        res.status(500).json({ error: `Failed to fetch PDF, ${err}` });
     }
 });
 
@@ -216,7 +216,7 @@ app.post('/confirm-read', (req, res) => {
     db.query(sql, values, (err, result) => {
         if (err) {
             console.error("DB error:", err);
-            return res.status(500).json({ error: "Database error" });
+            return res.status(500).json({ error: `Database error ${err}` });
         }
 
         res.json({ success: true });
@@ -227,7 +227,7 @@ app.post('/confirm-read', (req, res) => {
 app.get('/get-read-documents', (req, res) => {
     const sql = "SELECT * FROM document_confirmations ORDER BY timestamp DESC";
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: 'DB error' });
+        if (err) return res.status(500).json({ error: `DB error, ${err}` });
         res.json(results);
     });
 });
