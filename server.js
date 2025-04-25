@@ -35,21 +35,55 @@ app.use(function (req, res, next) {
     next();
 });
 
-
-
-const db = mysql.createConnection({
+const db_config = {
     host: '162.241.218.106',
     user: 'yzrmttmy_olaogunyemi',
     password: 'WebteamIntranet01',
     database: 'yzrmttmy_staffpolicy'
-})
+};
+
+const db = mysql.createConnection(db_config);
+
+// Event listener for connection errors
+db.on('error', function (err) {
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+        handleDisconnect();
+    } else {
+        throw err;
+    }
+});
+// Function to handle disconnection and reconnect
+function handleDisconnect() {
+    objConn = mysql.createConnection(db_config);
+    db.connect(function (err) {
+        if (err) {
+            setTimeout(handleDisconnect, 2000); // Retry after 2 seconds
+        } else {
+            console.log('Connected to db!');
+        }
+    });
+    db.on('error', function (err) {
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            handleDisconnect();
+        } else {
+            throw err;
+        }
+    });
+}
+db.connect(function (err) {
+    if (err) {
+        console.error('error connecting:', err);
+        return;
+    }
+    console.log('connected as id ' + db.threadId);
+});
 
 
 app.get('/', (req, res) => {
     res.send('Hello from our server!')
 })
 
-app.post('/add_user', async(req, res) => {
+app.post('/add_user', async (req, res) => {
 
     const { name, email, username, password, role } = req.body;
 
@@ -93,7 +127,7 @@ app.post('/add_user', async(req, res) => {
 });
 app.get('/users', (req, res) => {
     const sql = "SELECT * FROM staff_users";
-   
+
     db.query(sql, (err, result) => {
         if (err) {
             console.error("DB error:", err);
@@ -106,7 +140,7 @@ app.get('/users', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-    
+
     const { logPassword, logUsername } = req.body;
 
     if (!logUsername || !logPassword) {
@@ -138,68 +172,68 @@ app.post('/login', (req, res) => {
             { expiresIn: '1h' } // Token lasts 1 hour
         );
 
-        return res.json({ token,  id: user.id, logUsername: user.username , name: user.name, email: user.email, role: user.role });
+        return res.json({ token, id: user.id, logUsername: user.username, name: user.name, email: user.email, role: user.role });
     });
 });
 
 
 app.get('/proxy-pdf', async (req, res) => {
     const { url } = req.query;
-  
+
     if (!url) return res.status(400).json({ error: 'Missing url query param' });
-  
+
     try {
-      const response = await fetch(url);
-      const contentType = response.headers.get('content-type');
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-  
-      res.set('Content-Type', contentType || 'application/pdf');
-      res.send(buffer);
+        const response = await fetch(url);
+        const contentType = response.headers.get('content-type');
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        res.set('Content-Type', contentType || 'application/pdf');
+        res.send(buffer);
     } catch (err) {
-      console.error('PDF fetch error:', err);
-      res.status(500).json({ error: 'Failed to fetch PDF' });
+        console.error('PDF fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch PDF' });
     }
-  });
+});
 
 
 // confirmation by staff that they have read the document
 app.post('/confirm-read', (req, res) => {
-  const { profile, documentUrl, timestamp } = req.body;
+    const { profile, documentUrl, timestamp } = req.body;
 
-  const doc_name = documentUrl.substring(60, documentUrl.indexOf('.pdf'));
+    const doc_name = documentUrl.substring(60, documentUrl.indexOf('.pdf'));
 
-  console.log(profile.user.name);
+    console.log(profile.user.name);
 
-  const sql = `
+    const sql = `
     INSERT INTO document_confirmations (user, document_name, document_url, timestamp)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE timestamp = ?
   `;
 
-  const values = [profile.user.name, doc_name, documentUrl, timestamp, timestamp];
+    const values = [profile.user.name, doc_name, documentUrl, timestamp, timestamp];
 
-  db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("DB error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("DB error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
 
-    res.json({ success: true });
-  });
+        res.json({ success: true });
+    });
 });
 
 // get all read documents by staff
 app.get('/get-read-documents', (req, res) => {
     const sql = "SELECT * FROM document_confirmations ORDER BY timestamp DESC";
     db.query(sql, (err, results) => {
-      if (err) return res.status(500).json({ error: 'DB error' });
-      res.json(results);
+        if (err) return res.status(500).json({ error: 'DB error' });
+        res.json(results);
     });
-  });
-  
+});
 
-  
+
+
 
 app.listen(port, () => {
     console.log(`server listening on port ${port}`)
