@@ -183,16 +183,16 @@ app.get('/proxy-pdf', async (req, res) => {
 });
 
 app.post('/confirm-read', (req, res) => {
-    const { profile, documentUrl, timestamp } = req.body;
+    const { profile, documentUrl, timestamp, read_status } = req.body;
     const doc_name = documentUrl.substring(60, documentUrl.indexOf('.pdf'));
 
     const sql = `
-    INSERT INTO document_confirmations (user,user_id, document_name, document_url, timestamp)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO document_confirmations (user,user_id, document_name, document_url,read_status, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE timestamp = ?
     `;
 
-    const values = [profile.user.name, profile.user.id, doc_name, documentUrl, timestamp, timestamp];
+    const values = [profile.user.name, profile.user.id, doc_name, documentUrl, read_status, timestamp, timestamp];
 
     db.query(sql, values, (err, result) => {
         if (err) {
