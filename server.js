@@ -14,11 +14,11 @@ app.use(express.json());
 app.use(cors());
 
 app.use(function (req, res, next) {
-        const allowedOrigins = ['http://localhost:5173', 'https://staff.bluebirdschildcare.co.uk'];
-        const origin = req.headers.origin;
-        if (allowedOrigins.includes(origin)) {
-             res.setHeader('Access-Control-Allow-Origin', origin);
-        }
+    const allowedOrigins = ['http://localhost:5173', 'https://staff.bluebirdschildcare.co.uk'];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -46,7 +46,7 @@ db.query('SELECT 1', (err) => {
 });
 
 app.get('/', (req, res) => {
-    res.send('Hello from our server!')
+    res.send('Hello from our server!!!')
 });
 
 app.post('/add_user', async (req, res) => {
@@ -95,6 +95,34 @@ app.get('/users', (req, res) => {
     });
 });
 
+app.get('/user_info/:id', (req, res) => {
+    const sql = `SELECT 
+  dc.id AS confirmation_id,
+  dc.document_name,
+  dc.timestamp,
+  dc.document_url,
+  su.id AS user_id,
+  su.username,
+  su.email,
+  su.name
+FROM 
+  document_confirmations dc
+INNER JOIN 
+  staff_users su 
+ON 
+  dc.user_id = su.id
+WHERE 
+  su.id = ${req.params.id}; 
+`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.error("DB error:", err);
+            return res.status(500).json({ message: `Something unexpected occurred, ${err}`, error: err });
+        }
+        return res.json(result);
+    });
+});
+
 app.post('/login', (req, res) => {
     const { logPassword, logUsername } = req.body;
 
@@ -110,7 +138,7 @@ app.post('/login', (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(401).json({ message: "Invalid credentials" });
+            return res.status(401).json({ message: `Invalid credentials, ${err}` });
         }
 
         const user = results[0];
@@ -159,12 +187,12 @@ app.post('/confirm-read', (req, res) => {
     const doc_name = documentUrl.substring(60, documentUrl.indexOf('.pdf'));
 
     const sql = `
-    INSERT INTO document_confirmations (user, document_name, document_url, timestamp)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO document_confirmations (user,user_id, document_name, document_url, timestamp)
+    VALUES (?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE timestamp = ?
     `;
 
-    const values = [profile.user.name, doc_name, documentUrl, timestamp, timestamp];
+    const values = [profile.user.name, profile.user.id, doc_name, documentUrl, timestamp, timestamp];
 
     db.query(sql, values, (err, result) => {
         if (err) {
