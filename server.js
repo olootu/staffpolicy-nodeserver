@@ -112,8 +112,8 @@ INNER JOIN
 ON 
   dc.user_id = su.id
 WHERE 
-  su.id = ${req.params.id}; 
-`;
+  su.id = ${req.params.id} && YEAR(timestamp) = YEAR(CURDATE()); 
+`; // Queries the current year alone.
     db.query(sql, (err, result) => {
         if (err) {
             console.error("DB error:", err);
